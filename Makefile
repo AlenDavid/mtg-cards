@@ -8,6 +8,10 @@ download:
 extract: ./downloads/AllPrintings.psql.zip
 	tar -xf ./downloads/AllPrintings.psql.zip -C ./migrations
 
-install: extract
+migrate:
+	psql -h localhost -U postgres -f ./migrations/AllPrintings.psql
 
-.PHONY: extract install
+install: extract migrate
+
+
+.PHONY: extract install extract migrate
