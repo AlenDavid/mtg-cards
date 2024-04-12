@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  database:
+    image: mysql
+    ports:
+      - 3306:3306
+    environment:
+      - USERNAME=mysql
+      - PASSWORD=mysql
+    volumes:
+      - ./data:/var/lib/postgresql/data

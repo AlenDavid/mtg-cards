@@ -6,3 +6,5 @@ migrations/*
 
 .idea
 .vscode
+
+node_modules/
