@@ -3,3 +3,6 @@ downloads/*
 
 migrations/*
 !migrations/.gitkeep
+
+.idea
+.vscode
