@@ -2,7 +2,7 @@ const express = require("express");
 
 const { Sequelize, DataTypes } = require("sequelize");
 
-const conn = "postgres://postgres:postres@localhost:5432/postgres";
+const conn = "postgres://postgres:postres@0.0.0.0:5432/postgres";
 
 const sequelize = new Sequelize(conn);
 
