@@ -1,5 +1,4 @@
 download:
-	rm ./downloads/AllPrintings.psql.zip
 	wget -P downloads https://mtgjson.com/api/v5/AllPrintings.psql.zip
 
 ./downloads/AllPrintings.psql.zip:
