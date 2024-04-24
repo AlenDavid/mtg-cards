@@ -19,31 +19,30 @@ spec:
       app: postgres
   serviceName: postgres
   replicas: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 4Gi
   template:
     metadata:
       labels:
         app: postgres
     spec:
       containers:
-        - name: postgres
-          image: postgres:16
-          env:
-            - name: POSTGRES_USER
-              value: postgres
-            - name: POSTGRES_PASSWORD
-              value: postgres
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-          ports:
-          - containerPort: 5432
-            name: postgres
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 4Gi
-        storageClassName: standard
+      - name: postgres
+        image: postgres:16
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        volumeMounts:
+        - name: postgres-volume
+          mountPath: /var/lib/postgresql/data
+        ports:
+        - containerPort: 5432
+          name: postgres
