@@ -26,7 +26,7 @@ const Card = sequelize.define(
 const app = express();
 
 app.get("/", (req, res) => {
-  res.json({ msg: "cala a boca mano" });
+  res.json(app.routes);
 });
 
 app.get("/cards", async (req, res) => {
