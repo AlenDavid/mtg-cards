@@ -1,0 +1,78 @@
+---
+title: "Magic: The Gathering Cards"
+output: html_notebook
+---
+
+```{r}
+cartas <- read.csv2("../datasets-csv/cards.csv", sep=",", encoding="utf-8")
+head(cartas)
+summary(cartas)
+str(cartas)
+ncol(cartas)
+nrow(cartas)
+```
+
+# Mapeando colunas que serão observadas e adequando o dataset para observação
+
+Além disso, em colunas que tem valores TRUE e outros com uma string vazia, transforma o vazio em FALSE, para que o atributo seja binário, como previsto.
+
+```{r}
+cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
+str(cartas)
+
+print(unique(cartas$isAlternative))
+cartas$isAlternative <- ifelse(cartas$isAlternative == "", FALSE, TRUE)
+print(unique(cartas$isAlternative))
+summary(cartas$isAlternative)
+
+print(unique(cartas$isPromo))
+cartas$isPromo <- ifelse(cartas$isPromo == "", FALSE, TRUE)
+print(unique(cartas$isPromo))
+summary(cartas$isPromo)
+
+print(unique(cartas$isRebalanced))
+cartas$isRebalanced <- ifelse(cartas$isRebalanced == "", FALSE, TRUE)
+print(unique(cartas$isRebalanced))
+summary(cartas$isRebalanced)
+
+print(unique(cartas$isReprint))
+cartas$isReprint <- ifelse(cartas$isReprint == "", FALSE, TRUE)
+print(unique(cartas$isReprint))
+summary(cartas$isReprint)
+
+cartas_duplicadas <- duplicated(cartas[, 1:10]) | duplicated(cartas[, 1:10], fromLast = TRUE)
+primeiras_ocorrencias <- !duplicated(cartas$name)
+cartas_unicas <- cartas[!(cartas_duplicadas & !primeiras_ocorrencias), ]
+
+nrow(cartas_unicas)
+head(cartas_unicas)
+```
+
+# Tratando valores nulos
+
+Utilizaremos apenas as cartas que tem um número absoluto no valor de ataque e defesa. Se for nulo, deve ser desconsiderado, assim como quando contiver caracteres não numéricos.
+
+```{r}
+cartas_unicas$power <- as.numeric(cartas_unicas$power)
+cartas_unicas <- subset(cartas_unicas, cartas_unicas$power >= 0 & !is.na(cartas_unicas$power) & cartas_unicas$power %% 1 == 0)
+cartas_unicas$power <- as.integer(cartas_unicas$power)
+
+cartas_unicas$toughness <- as.numeric(cartas_unicas$toughness)
+cartas_unicas <- subset(cartas_unicas, cartas_unicas$toughness >= 0 & !is.na(cartas_unicas$toughness) & cartas_unicas$toughness %% 1 == 0)
+cartas_unicas$toughness <- as.integer(cartas_unicas$toughness)
+
+print(cartas_unicas)
+```
+# Removendo cartas que não tem a cor identificada
+
+Aqui, removeremos as cartas que não possuem nenhuma cor definida, pois não pertencem especificamente a nenhum tipo de baralho.
+
+```{r}
+cartas_unicas <- subset(cartas_unicas, cartas_unicas$colorIdentity != "")
+print(cartas_unicas)
+
+nrow(cartas_unicas)
+```
+
+
+
