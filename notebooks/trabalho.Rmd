@@ -44,6 +44,8 @@ cartas_duplicadas <- duplicated(cartas[, 1:10]) | duplicated(cartas[, 1:10], fro
 primeiras_ocorrencias <- !duplicated(cartas$name)
 cartas_unicas <- cartas[!(cartas_duplicadas & !primeiras_ocorrencias), ]
 
+cartas_unicas$manaValue <- as.numeric(cartas_unicas$manaValue)
+
 nrow(cartas_unicas)
 head(cartas_unicas)
 ```
@@ -63,16 +65,154 @@ cartas_unicas$toughness <- as.integer(cartas_unicas$toughness)
 
 print(cartas_unicas)
 ```
-# Removendo cartas que não tem a cor identificada
+```{r}
+categorizar_carta <- function(cor) {
+  if (is.na(cor) || cor == "") {
+    return("Sem Cor")
+  } else if (grepl(",", cor)) {
+    return("Multicolor")
+  } else {
+    color_map <- list(
+      W = "Branca",
+      U = "Azul",
+      B = "Preta",
+      R = "Vermelha",
+      G = "Verde"
+    )
+    return(color_map[[cor]])
+  }
+}
 
-Aqui, removeremos as cartas que não possuem nenhuma cor definida, pois não pertencem especificamente a nenhum tipo de baralho.
+cartas_unicas$colors <- sapply(cartas_unicas$colors, categorizar_carta)
+print(cartas_unicas)
+```
+
+# Separando as cartas pela cor
+
+Aqui, separaremos as cartas em grupos:
+
+-Sem cor
+-Brancas
+-Pretas
+-Azuis
+-Vermelhas
+-Verdes
+-Multicolores
 
 ```{r}
-cartas_unicas <- subset(cartas_unicas, cartas_unicas$colorIdentity != "")
-print(cartas_unicas)
+cartas_sem_cor <- subset(cartas_unicas, cartas_unicas$colors == "Sem Cor")
+nrow(cartas_sem_cor)
+print(cartas_sem_cor)
 
-nrow(cartas_unicas)
+cartas_pretas <- subset(cartas_unicas, cartas_unicas$colors == "Preta")
+nrow(cartas_pretas)
+print(cartas_pretas)
+
+cartas_brancas <- subset(cartas_unicas, cartas_unicas$colors == "Branca")
+nrow(cartas_brancas)
+print(cartas_brancas)
+
+cartas_azuis <- subset(cartas_unicas, cartas_unicas$colors == "Azul")
+nrow(cartas_azuis)
+print(cartas_azuis)
+
+cartas_vermelhas <- subset(cartas_unicas, cartas_unicas$colors == "Vermelha")
+nrow(cartas_vermelhas)
+print(cartas_vermelhas)
+
+cartas_verdes <- subset(cartas_unicas, cartas_unicas$colors == "Verde")
+nrow(cartas_verdes)
+print(cartas_verdes)
+
+cartas_multicolor <- subset(cartas_unicas, cartas_unicas$colors == "Multicolor")
+print(cartas_multicolor)
 ```
+# Correlação
+
+Veremos, para cada grupo de cartas, se existe uma correlação entre o valor de ataque/defesa com o custo para invocação da carta. Para o grupo que contém todas as cartas juntas, veremos qual a correlação entre a cor da carta e os valores de atributo.
+
+```{r}
+num_cores <- model.matrix(~ colors - 1, data = cartas_unicas)
+
+correlacao_ataque_cor <- apply(num_cores, 2, function(x) cor(cartas_unicas$power, x, use = "complete.obs"))
+print(correlaca_ataque_cor)
+```
+Podemos ver que não existe nenhuma correlação forte entre a cor das cartas e o valor de ataque. Isso significa que existe um bom balanceamento entre o poder das cartas em sua distribuição de cores.
+
+Porém, como esperado, as cores azul e branca possuem uma correlação levemente negativa, visto que são cores focadas mais no controle de jogo ou cura, e não tanto no poder bruto de ataque.
+
+```{r}
+correlacao_defesa_cor <- apply(num_cores, 2, function(x) cor(cartas_unicas$toughness, x, use = "complete.obs"))
+print(correlacao_defesa_cor)
+```
+Novamente, nenhuma correlação forte o suficiente para ser considerada no valor de defesa das cartas.
+
+Abaixo, começaremos os cálculos para cada cor individualmente, buscando uma correlação entre o poder de ataque das cartas, e o custo de invocação.
+
+```{r}
+cor(cartas_sem_cor$power, cartas_sem_cor$manaValue)
+
+cor(cartas_sem_cor$toughness, cartas_sem_cor$manaValue)
+```
+Para as cartas sem cor específica, podemos ver uma correlação forte entre o poder de ataque da carta, e o custo de invocação. Existe também uma correlação moderada para o valor de defesa.
+
+```{r}
+cor(cartas_pretas$power, cartas_pretas$manaValue)
+
+cor(cartas_pretas$toughness, cartas_pretas$manaValue)
+```
+Para as cartas pretas, tanto no ataque, quanto na defesa, vemos uma correlação moderada quando comparados os valores ao custo total de mana para invocação. Isso indica que existem cartas fortes com baixo custo de mana, mas também existem cartas com baixo poder de ataque, e um alto custo de mana. O baralho preto contém várias cartas com poderes que vão além dos valores de ataque e defesa, muitas vezes focados em tirar vida do adversário para benefício próprio. Por isso, essa correlação pode não ser tão forte.
+
+```{r}
+cor(cartas_brancas$power, cartas_brancas$manaValue)
+
+cor(cartas_brancas$toughness, cartas_brancas$manaValue)
+```
+Com as cartas brancas, vemos uma correlação quase forte, indicando um custo maior para invocação de cartas com maior valor de ataque. Um comportamento mais próximo do esperado.
+
+```{r}
+cor(cartas_azuis$power, cartas_azuis$manaValue)
+
+cor(cartas_azuis$toughness, cartas_azuis$manaValue)
+```
+Nas cartas azuis, a correlação entre poder de ataque e custo de mana é alta, porém entre defesa e custo de mana ela é moderada. O baralho azul também é um baralho bastante estratégico, focado no controle de jogo através de magias e poderes especiais, mais do que valores brutos de ataque e defesa.
+
+```{r}
+cor(cartas_vermelhas$power, cartas_vermelhas$manaValue)
+
+cor(cartas_vermelhas$toughness, cartas_vermelhas$manaValue)
+
+cor(cartas_verdes$power, cartas_verdes$manaValue)
+
+cor(cartas_verdes$toughness, cartas_verdes$manaValue)
+```
+Sem nenhuma surpresa, os baralhos vermelho e verde são os com maior correlação entre poder de ataque e custo de mana. São baralhos muito focados em poder bruto, principalmente o verde. A estratégia principal dos jogadores que utilizam baralhos verdes, normalmente é acabar com o jogo nas primeiras rodadas com um poder de ataque muito alto. O baralho vermelho tem um comportamento semelhante, mas demora mais para formar um time com ataque alto durante a partida.
+
+
+# Regressão
+
+Como a correlação é maior no baralho verde, tentaremos achar a regressão com ele.
+
+```{r}
+plot(cartas_verdes$power ~ cartas_verdes$manaValue)
+modelo_linear_ataque <- lm(power ~ manaValue, data = cartas_verdes)
+summary(modelo_linear_ataque)
+abline(coef(modelo_linear_ataque), lwd = 2, col="red")
+
+modelo_linear_defesa <- lm(toughness ~ manaValue, data = cartas_verdes)
+summary(modelo_linear_defesa)
+```
+Tentaremos prever um valor de ataque com base no custo de invocação para as cartas verdes.
+
+```{r}
+custo_mana <- 5
+previsao <- predict(modelo_linear_ataque, newdata = data.frame(manaValue = custo_mana))
+print(previsao)
+```
+
+
+
+
 
 
 
