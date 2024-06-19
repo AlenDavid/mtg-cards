@@ -6,11 +6,14 @@ output: html_notebook
 ```{r}
 library(fmsb)
 library(ggplot2)
-library(dplyr)
+library(dplyr, warn.conflicts = FALSE)
 
 cartas <- read.csv2("../datasets-csv/cards.csv", sep=",", encoding="utf-8")
+
 head(cartas)
-summary(cartas)
+
+# summary(cartas)
+
 str(cartas)
 ncol(cartas)
 nrow(cartas)
@@ -24,36 +27,16 @@ Além disso, em colunas que tem valores TRUE e outros com uma string vazia, tran
 cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "rarity", "subtypes","isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
 str(cartas)
 
-
-print(unique(cartas$isAlternative))
 cartas$isAlternative <- ifelse(cartas$isAlternative == "", FALSE, TRUE)
-print(unique(cartas$isAlternative))
-summary(cartas$isAlternative)
-
-print(unique(cartas$isPromo))
 cartas$isPromo <- ifelse(cartas$isPromo == "", FALSE, TRUE)
-print(unique(cartas$isPromo))
-summary(cartas$isPromo)
-
-print(unique(cartas$isRebalanced))
 cartas$isRebalanced <- ifelse(cartas$isRebalanced == "", FALSE, TRUE)
-print(unique(cartas$isRebalanced))
-summary(cartas$isRebalanced)
-
-print(unique(cartas$isReprint))
 cartas$isReprint <- ifelse(cartas$isReprint == "", FALSE, TRUE)
-print(unique(cartas$isReprint))
-summary(cartas$isReprint)
-
 cartas_duplicadas <- duplicated(cartas[, 1:10]) | duplicated(cartas[, 1:10], fromLast = TRUE)
 primeiras_ocorrencias <- !duplicated(cartas$name)
 cartas_unicas <- cartas[!(cartas_duplicadas & !primeiras_ocorrencias), ]
-
 cartas_unicas$manaValue <- as.numeric(cartas_unicas$manaValue)
 
 cartas <- mutate(cartas, rarity = case_match(rarity, "mythic" ~ 4, "rare" ~3, "uncommon" ~ 2, "common" ~ 1, .default = 0))
-print(unique(cartas$rarity))
-summary(cartas$rarity)
 
 nrow(cartas_unicas)
 head(cartas_unicas)
@@ -71,8 +54,6 @@ cartas_unicas$power <- as.integer(cartas_unicas$power)
 cartas_unicas$toughness <- as.numeric(cartas_unicas$toughness)
 cartas_unicas <- subset(cartas_unicas, cartas_unicas$toughness >= 0 & !is.na(cartas_unicas$toughness) & cartas_unicas$toughness %% 1 == 0)
 cartas_unicas$toughness <- as.integer(cartas_unicas$toughness)
-
-print(cartas_unicas)
 ```
 ```{r}
 categorizar_carta <- function(cor) {
@@ -93,7 +74,6 @@ categorizar_carta <- function(cor) {
 }
 
 cartas_unicas$colors <- sapply(cartas_unicas$colors, categorizar_carta)
-print(cartas_unicas)
 ```
 
 # Separando as cartas pela cor
@@ -111,30 +91,24 @@ Aqui, separaremos as cartas em grupos:
 ```{r}
 cartas_sem_cor <- subset(cartas_unicas, cartas_unicas$colors == "Sem Cor")
 nrow(cartas_sem_cor)
-print(cartas_sem_cor)
 
 cartas_pretas <- subset(cartas_unicas, cartas_unicas$colors == "Preta")
 nrow(cartas_pretas)
-print(cartas_pretas)
 
 cartas_brancas <- subset(cartas_unicas, cartas_unicas$colors == "Branca")
 nrow(cartas_brancas)
-print(cartas_brancas)
 
 cartas_azuis <- subset(cartas_unicas, cartas_unicas$colors == "Azul")
 nrow(cartas_azuis)
-print(cartas_azuis)
 
 cartas_vermelhas <- subset(cartas_unicas, cartas_unicas$colors == "Vermelha")
 nrow(cartas_vermelhas)
-print(cartas_vermelhas)
 
 cartas_verdes <- subset(cartas_unicas, cartas_unicas$colors == "Verde")
 nrow(cartas_verdes)
-print(cartas_verdes)
 
 cartas_multicolor <- subset(cartas_unicas, cartas_unicas$colors == "Multicolor")
-print(cartas_multicolor)
+nrow(cartas_multicolor)
 ```
 # Correlação
 
@@ -144,6 +118,7 @@ Veremos, para cada grupo de cartas, se existe uma correlação entre o valor de 
 num_cores <- model.matrix(~ colors - 1, data = cartas_unicas)
 
 correlacao_ataque_cor <- apply(num_cores, 2, function(x) cor(cartas_unicas$power, x, use = "complete.obs"))
+
 print(correlacao_ataque_cor)
 ```
 Podemos ver que não existe nenhuma correlação forte entre a cor das cartas e o valor de ataque. Isso significa que existe um bom balanceamento entre o poder das cartas em sua distribuição de cores.
@@ -152,6 +127,7 @@ Porém, como esperado, as cores azul e branca possuem uma correlação levemente
 
 ```{r}
 correlacao_defesa_cor <- apply(num_cores, 2, function(x) cor(cartas_unicas$toughness, x, use = "complete.obs"))
+
 print(correlacao_defesa_cor)
 ```
 Novamente, nenhuma correlação forte o suficiente para ser considerada no valor de defesa das cartas.
@@ -216,6 +192,7 @@ Tentaremos prever um valor de ataque com base no custo de invocação para as ca
 ```{r}
 custo_mana <- 5
 previsao <- predict(modelo_linear_ataque, newdata = data.frame(manaValue = custo_mana))
+
 print(previsao)
 ```
 # Um mapa de calor que relaciona o custo de mana com a cor da carta, para cada carta unica
