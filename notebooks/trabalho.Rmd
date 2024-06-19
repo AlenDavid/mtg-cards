@@ -253,7 +253,6 @@ ggplot(ataque_melted, aes(Var1, Var2, fill = value)) +
   theme_minimal() +
   labs(title = "Distribuião dos Pontos de Ataque por cor", x = "Cor", y = "Ataque") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
 Outra previsão, onde usamos diferentes variáveis para predizer quantidade de mana.
