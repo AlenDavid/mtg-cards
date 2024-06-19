@@ -1,5 +1,7 @@
 # Data Science applied in MTG Cards
 
+https://alendavid.github.io/mtg-cards/notebooks/trabalho.nb.html
+
 This repository contains functionalities to download, visualize and interact with Magic: The Gathering cards, sets and more. All information regarding Magic: The Gathering is retrieved by [mtgjson.com](https://mtgjson.com/) and belong to Wizards of the Coast.
 
 ## Requirements
