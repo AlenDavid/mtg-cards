@@ -4,6 +4,10 @@ output: html_notebook
 ---
 
 ```{r}
+library(fmsb)
+library(ggplot)
+library(dplyr)
+
 cartas <- read.csv2("../datasets-csv/cards.csv", sep=",", encoding="utf-8")
 head(cartas)
 summary(cartas)
@@ -19,6 +23,7 @@ Além disso, em colunas que tem valores TRUE e outros com uma string vazia, tran
 ```{r}
 cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "subtypes","isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
 str(cartas)
+
 
 print(unique(cartas$isAlternative))
 cartas$isAlternative <- ifelse(cartas$isAlternative == "", FALSE, TRUE)
@@ -45,6 +50,10 @@ primeiras_ocorrencias <- !duplicated(cartas$name)
 cartas_unicas <- cartas[!(cartas_duplicadas & !primeiras_ocorrencias), ]
 
 cartas_unicas$manaValue <- as.numeric(cartas_unicas$manaValue)
+
+cartas <- mutate(cartas, rarity = case_match(rarity, "mythic" ~ 4, "rare" ~3, "uncommon" ~ 2, "common" ~ 1, .default = 0))
+print(unique(cartas$rarity))
+summary(cartas$rarity)
 
 nrow(cartas_unicas)
 head(cartas_unicas)
@@ -247,7 +256,7 @@ ggplot(ataque_melted, aes(Var1, Var2, fill = value)) +
 
 ```
 
-
+Outra previsão, onde usamos diferentes variáveis para predizer quantidade de mana.
 
 ```{r}
 library(fmsb)
@@ -320,3 +329,10 @@ legend(
 
 ```
 
+modelo_linear_ataque_vida <- lm(manaValue ~ power+toughness+rarity+subtypes, cartas_verdes)
+
+previsao <- predict(modelo_linear_ataque_vida, data.frame(power = 1, toughness = 1, rarity="common", subtypes=c("Human, Soldier")))
+
+print(previsao)
+
+```
