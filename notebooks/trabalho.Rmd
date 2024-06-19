@@ -5,7 +5,7 @@ output: html_notebook
 
 ```{r}
 library(fmsb)
-library(ggplot)
+library(ggplot2)
 library(dplyr)
 
 cartas <- read.csv2("../datasets-csv/cards.csv", sep=",", encoding="utf-8")
@@ -21,7 +21,7 @@ nrow(cartas)
 Além disso, em colunas que tem valores TRUE e outros com uma string vazia, transforma o vazio em FALSE, para que o atributo seja binário, como previsto.
 
 ```{r}
-cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "subtypes","isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
+cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "rarity", "subtypes","isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
 str(cartas)
 
 
@@ -290,9 +290,9 @@ media_valores_por_cor <- summarise(
 
 print(media_valores_por_cor)
 
-media_valores_por_cor$força <- normalizar_media_atributos(media_valores_por_cor$força)
-media_valores_por_cor$vida <- normalizar_media_atributos(media_valores_por_cor$vida)
-media_valores_por_cor$custo <- normalizar_media_atributos(media_valores_por_cor$custo)
+media_valores_por_cor$força <- normalizar_media(media_valores_por_cor$força)
+media_valores_por_cor$vida <- normalizar_media(media_valores_por_cor$vida)
+media_valores_por_cor$custo <- normalizar_media(media_valores_por_cor$custo)
 
 dados_para_grafico_radar <- rbind(
   rep(10, ncol(media_valores_por_cor) - 1),
@@ -328,6 +328,7 @@ legend(
 
 ```
 
+```{r}
 modelo_linear_ataque_vida <- lm(manaValue ~ power+toughness+rarity+subtypes, cartas_verdes)
 
 previsao <- predict(modelo_linear_ataque_vida, data.frame(power = 1, toughness = 1, rarity="common", subtypes=c("Human, Soldier")))
