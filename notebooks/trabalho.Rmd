@@ -17,7 +17,7 @@ nrow(cartas)
 Além disso, em colunas que tem valores TRUE e outros com uma string vazia, transforma o vazio em FALSE, para que o atributo seja binário, como previsto.
 
 ```{r}
-cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
+cartas <- cartas[, c("name", "colorIdentity", "colors", "power", "toughness", "defense", "manaCost", "manaValue", "life", "type", "subtypes","isAlternative", "isPromo", "isRebalanced", "isReprint", "variations")]
 str(cartas)
 
 print(unique(cartas$isAlternative))
@@ -135,7 +135,7 @@ Veremos, para cada grupo de cartas, se existe uma correlação entre o valor de 
 num_cores <- model.matrix(~ colors - 1, data = cartas_unicas)
 
 correlacao_ataque_cor <- apply(num_cores, 2, function(x) cor(cartas_unicas$power, x, use = "complete.obs"))
-print(correlaca_ataque_cor)
+print(correlacao_ataque_cor)
 ```
 Podemos ver que não existe nenhuma correlação forte entre a cor das cartas e o valor de ataque. Isso significa que existe um bom balanceamento entre o poder das cartas em sua distribuição de cores.
 
@@ -209,10 +209,114 @@ custo_mana <- 5
 previsao <- predict(modelo_linear_ataque, newdata = data.frame(manaValue = custo_mana))
 print(previsao)
 ```
+# Um mapa de calor que relaciona o custo de mana com a cor da carta, para cada carta unica
+```{r}
+
+library(ggplot2)
+library(reshape2)
+
+cartas_com_mana <- subset(cartas_unicas, !is.na(manaValue) & manaValue != "")
+mana_por_cor <- table(cartas_com_mana$colors, cartas_com_mana$manaValue)
+
+mana_melted <- melt(mana_por_cor)
+
+ggplot(mana_melted, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "turquoise", high = "blue") +
+  theme_minimal() +
+  labs(title = "Distribuião do Custo de Mana por cor", x = "Cor", y = "Custo") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+# Um mapa de calor que relaciona os pontos de ataque com a cor da carta, para cada carta unica
+```{r}
+cartas_com_ataque <- subset(cartas_unicas, !is.na(power) & power != "" & power < 90)
+ataque_por_color <- table(cartas_com_ataque$colors, cartas_com_ataque$power)
+
+ataque_melted <- melt(ataque_por_color)
+
+print(ataque_melted)
+
+ggplot(ataque_melted, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "yellow", high = "red") +
+  theme_minimal() +
+  labs(title = "Distribuião dos Pontos de Ataque por cor", x = "Cor", y = "Ataque") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
 
 
 
+```{r}
+library(fmsb)
+library(dplyr)
 
+normalizar_atributos <- function(x) {
+    return((x - min(x)) / (max(x) - min(x)) * 10)
+}
+normalizar_media <- function(x) {
+  return(((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)) * 10) + 1 )
+}
 
+cartas_unicas_cores_unicas <- filter(
+  cartas_unicas,
+  colors != "Sem Cor" & colors != "Multicolor"
+)
 
+cartas_unicas_cores_unicas$power_norm <- normalizar_atributos(cartas_unicas_cores_unicas$power)
+cartas_unicas_cores_unicas$toughness_norm <- normalizar_atributos(cartas_unicas_cores_unicas$toughness)
+cartas_unicas_cores_unicas$manaValue_norm <- normalizar_atributos(cartas_unicas_cores_unicas$manaValue)
+
+cartas_unicas_cores_unicas$power_norm <- ifelse(cartas_unicas_cores_unicas$power_norm > 90, NA, cartas_unicas_cores_unicas$power_norm)
+cartas_unicas_cores_unicas$toughness_norm <- ifelse(cartas_unicas_cores_unicas$toughness_norm > 90, NA, cartas_unicas_cores_unicas$toughness_norm)
+cartas_unicas_cores_unicas$manaValue_norm <- ifelse(cartas_unicas_cores_unicas$manaValue_norm > 90, NA, cartas_unicas_cores_unicas$manaValue_norm)
+
+media_valores_por_cor <- summarise(
+  group_by(cartas_unicas_cores_unicas, colors),
+  força = mean(power_norm, na.rm = TRUE),
+  vida = mean(toughness_norm, na.rm = TRUE),
+  custo = mean(manaValue_norm, na.rm = TRUE)
+)
+
+print(media_valores_por_cor)
+
+media_valores_por_cor$força <- normalizar_media_atributos(media_valores_por_cor$força)
+media_valores_por_cor$vida <- normalizar_media_atributos(media_valores_por_cor$vida)
+media_valores_por_cor$custo <- normalizar_media_atributos(media_valores_por_cor$custo)
+
+dados_para_grafico_radar <- rbind(
+  rep(10, ncol(media_valores_por_cor) - 1),
+  rep(0, ncol(media_valores_por_cor) - 1),
+  media_valores_por_cor[,-1]
+)
+
+print(dados_para_grafico_radar)
+
+dados_para_grafico_radar[1, ] <- dados_para_grafico_radar[1, ] + 1
+dados_para_grafico_radar[2, ] <- dados_para_grafico_radar[2, ] + 1
+
+radarchart(
+  dados_para_grafico_radar,
+  axistype = 1,
+  pcol = c("cyan", "grey", "black", "green", "red"),
+  plwd = 2,
+  cglcol = "grey",
+  cglty = 1,
+  axislabcol = "grey",
+  caxislabels = seq(0, 14, 2),
+  cglwd = 0.8,
+  vlcex = 0.8
+)
+
+title(main = "Média de atributos por cor")
+
+legend(
+  x = 1.5, y = 1, legend = media_valores_por_cor$colors, bty = "n",
+  pch = 20, col = c("cyan", "grey", "black", "green", "red"),
+  text.col = "black", cex = 0.8, pt.cex = 1.5
+)
+
+```
 

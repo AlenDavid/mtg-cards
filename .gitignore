@@ -8,3 +8,4 @@ migrations/*
 .vscode
 
 node_modules/
+.Rproj.user
